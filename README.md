@@ -114,6 +114,23 @@ curl "http://127.0.0.1:8000/api/compare?symbol1=INFY&symbol2=HDFCBANK&days=30"
 
 5. **Correlation between stocks** — The compare feature reveals that banking stocks (HDFCBANK, ICICIBANK) tend to move together, while IT stocks (INFY, TCS) follow a different pattern, demonstrating sector-based correlation.
 
+## Deployment (Render — Free)
+
+This project is configured for one-click deployment on [Render.com](https://render.com):
+
+1. Push code to GitHub
+2. Go to [Render Dashboard](https://dashboard.render.com/) → **New** → **Web Service**
+3. Connect your GitHub repo
+4. Render will auto-detect `render.yaml` and configure everything
+5. Click **Deploy** — done!
+
+Settings (auto-configured via `render.yaml`):
+- **Build command:** `bash build.sh`
+- **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Runtime:** Python 3.11
+
+> The app auto-fetches stock data on first startup if the database is empty.
+
 ## Tech Stack
 
 - **Backend:** FastAPI + SQLAlchemy + SQLite

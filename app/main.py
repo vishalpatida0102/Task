@@ -3,21 +3,47 @@ FastAPI application entry point.
 Run with:  uvicorn app.main:app --reload
 """
 
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from app.database.connection import engine, Base
+from app.database.connection import engine, SessionLocal, Base
+from app.models.stock import StockData
 from app.routes.stocks import router as stock_router
 
-# Create all DB tables on startup
-Base.metadata.create_all(bind=engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Run once on server startup — create tables and auto-fetch data if DB is empty."""
+    # Ensure data directory exists
+    os.makedirs("data", exist_ok=True)
+
+    # Create tables
+    Base.metadata.create_all(bind=engine)
+
+    # Auto-fetch data if database is empty (useful for fresh deploys on Render)
+    db = SessionLocal()
+    try:
+        count = db.query(StockData).count()
+        if count == 0:
+            print("[*] Database is empty — auto-fetching stock data...")
+            from app.services.data_collector import fetch_and_store_all
+            fetch_and_store_all()
+    finally:
+        db.close()
+
+    yield  # app runs here
+
 
 app = FastAPI(
     title="Mini Stock Market Platform",
     description="Collect, analyse, and visualise Indian stock data — "
                 "built with FastAPI, SQLite, and Chart.js.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # --- API routes ---
