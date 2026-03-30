@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StockVista — Premium Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       RESET & VARIABLES
+    ═══════════════════════════════════════════════════════════ */
+    :root {
+      --bg-primary: #06090f;
+      --bg-secondary: #0c1221;
+      --bg-card: rgba(15, 23, 42, 0.6);
+      --bg-glass: rgba(15, 25, 50, 0.45);
+      --border: rgba(56, 189, 248, 0.08);
+      --border-hover: rgba(56, 189, 248, 0.2);
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.12);
+      --amber: #f59e0b;
+      --purple: #a78bfa;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --sidebar-w: 260px;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 14px; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.35); }
+
+    /* ═══════════════════════════════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════════════════════════════ */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: linear-gradient(180deg, #080d19 0%, #0a1128 100%);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: #fff;
+      box-shadow: 0 4px 15px rgba(56,189,248,0.3);
+    }
+
+    .logo-text {
+      font-size: 20px; font-weight: 800;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-sub {
+      font-size: 11px; color: var(--text-muted); margin-top: 2px;
+      padding-left: 46px; letter-spacing: 0.5px;
+    }
+
+    .sidebar-section {
+      padding: 20px 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      padding: 0 8px;
+      margin-bottom: 12px;
+    }
+
+    #companyList {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .company-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid transparent;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .company-btn::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 2px 2px 0;
+      transform: scaleY(0);
+      transition: transform 0.2s ease;
+    }
+
+    .company-btn:hover {
+      background: rgba(56,189,248,0.06);
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+    }
+
+    .company-btn.active {
+      background: linear-gradient(135deg, rgba(56,189,248,0.1), rgba(129,140,248,0.08));
+      color: #fff;
+      border-color: rgba(56,189,248,0.2);
+      font-weight: 600;
+    }
+
+    .company-btn.active::before { transform: scaleY(1); }
+
+    .company-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .company-btn-text {
+      display: flex; flex-direction: column; gap: 1px;
+    }
+
+    .company-btn-symbol { font-size: 13px; }
+    .company-btn-name { font-size: 10px; color: var(--text-muted); font-weight: 400; }
+
+    /* sidebar bottom status */
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .status-badge {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; color: var(--green);
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(34,197,94,0.5);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       MAIN AREA
+    ═══════════════════════════════════════════════════════════ */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 0%, rgba(56,189,248,0.04) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 50% at 0% 50%, rgba(129,140,248,0.03) 0%, transparent 50%),
+        var(--bg-primary);
+    }
+
+    /* top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      background: rgba(6,9,15,0.7);
+      flex-shrink: 0;
+    }
+
+    .topbar-left h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .symbol-badge {
+      display: inline-flex;
+      padding: 3px 10px;
+      background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(129,140,248,0.1));
+      border: 1px solid rgba(56,189,248,0.2);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .topbar-left .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       CONTROLS
+    ═══════════════════════════════════════════════════════════ */
+    .filter-group {
+      display: flex;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .filter-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .filter-btn:not(:last-child) {
+      border-right: 1px solid var(--border);
+    }
+
+    .filter-btn:hover {
+      color: var(--text-primary);
+      background: rgba(56,189,248,0.05);
+    }
+
+    .filter-btn.active-filter {
+      color: #fff;
+      background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(129,140,248,0.15));
+    }
+
+    .compare-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compare-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .compare-select {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s ease;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 6.646a.5.5 0 0 1 .708 0L8 9.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+
+    .compare-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .compare-select option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       CONTENT AREA
+    ═══════════════════════════════════════════════════════════ */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px 40px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       STAT CARDS
+    ═══════════════════════════════════════════════════════════ */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--card-accent, var(--accent)), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .card:hover::before { opacity: 1; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+    }
+
+    .card-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .card-value {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+
+    .card-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* card accents */
+    .card-green { --card-accent: var(--green); }
+    .card-green .card-icon { background: var(--green-dim); color: var(--green); }
+    .card-green .card-value { color: var(--green); }
+
+    .card-red { --card-accent: var(--red); }
+    .card-red .card-icon { background: var(--red-dim); color: var(--red); }
+    .card-red .card-value { color: var(--red); }
+
+    .card-blue { --card-accent: var(--accent); }
+    .card-blue .card-icon { background: rgba(56,189,248,0.12); color: var(--accent); }
+    .card-blue .card-value { color: var(--accent); }
+
+    .card-amber { --card-accent: var(--amber); }
+    .card-amber .card-icon { background: rgba(245,158,11,0.12); color: var(--amber); }
+    .card-amber .card-value { color: var(--amber); }
+
+    .card-purple { --card-accent: var(--purple); }
+    .card-purple .card-icon { background: rgba(167,139,250,0.12); color: var(--purple); }
+    .card-purple .card-value { color: var(--purple); }
+
+    /* ═══════════════════════════════════════════════════════════
+       CHART
+    ═══════════════════════════════════════════════════════════ */
+    .chart-container {
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      position: relative;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .chart-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .chart-title span {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 380px;
+    }
+
+    .chart-wrapper canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       WELCOME STATE (no company selected)
+    ═══════════════════════════════════════════════════════════ */
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .welcome-icon {
+      width: 80px; height: 80px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(56,189,248,0.1), rgba(129,140,248,0.08));
+      border: 1px solid rgba(56,189,248,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      margin-bottom: 24px;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .welcome h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #f1f5f9, #94a3b8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .welcome p {
+      color: var(--text-muted);
+      font-size: 14px;
+      max-width: 360px;
+      line-height: 1.6;
+    }
+
+    .welcome-keys {
+      display: flex; gap: 8px; margin-top: 20px;
+    }
+
+    .key-hint {
+      padding: 6px 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       LOADING SPINNER
+    ═══════════════════════════════════════════════════════════ */
+    .loader {
+      display: none;
+      position: fixed;
+      top: 0; left: var(--sidebar-w); right: 0;
+      height: 2px;
+      z-index: 100;
+      background: rgba(56,189,248,0.1);
+      overflow: hidden;
+    }
+
+    .loader.active { display: block; }
+
+    .loader::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -30%;
+      width: 30%; height: 100%;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: loading 1s ease-in-out infinite;
+    }
+
+    @keyframes loading {
+      0% { left: -30%; }
+      100% { left: 100%; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ANIMATIONS
+    ═══════════════════════════════════════════════════════════ */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in {
+      animation: fadeInUp 0.4s ease forwards;
+    }
+
+    .cards .card:nth-child(1) { animation-delay: 0s; }
+    .cards .card:nth-child(2) { animation-delay: 0.05s; }
+    .cards .card:nth-child(3) { animation-delay: 0.1s; }
+    .cards .card:nth-child(4) { animation-delay: 0.15s; }
+    .cards .card:nth-child(5) { animation-delay: 0.2s; }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════════════════ */
+    @media (max-width: 1100px) {
+      .cards { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .topbar { padding: 16px 20px; }
+      .content { padding: 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading bar -->
+<div class="loader" id="loader"></div>
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="logo-icon">SV</div>
+      <span class="logo-text">StockVista</span>
+    </div>
+    <div class="logo-sub">Real-Time Market Data</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Watchlist</div>
+    <div id="companyList"></div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      Market data synced
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<div class="main">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 id="title">Dashboard</h1>
+      <div class="subtitle" id="subtitle">Select a company to begin analysis</div>
+    </div>
+    <div class="topbar-right">
+      <div class="filter-group">
+        <button class="filter-btn active-filter" data-days="30">30D</button>
+        <button class="filter-btn" data-days="90">90D</button>
+        <button class="filter-btn" data-days="365">1Y</button>
+      </div>
+      <div class="compare-wrapper">
+        <span class="compare-label">VS</span>
+        <select class="compare-select" id="compareSelect">
+          <option value="">None</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="contentArea">
+
+    <!-- Welcome state -->
+    <div class="welcome" id="welcomeState">
+      <div class="welcome-icon">&#x1F4C8;</div>
+      <h2>Welcome to StockVista</h2>
+      <p>Select a company from the sidebar to view real-time stock data, analytics, and price charts.</p>
+      <div class="welcome-keys">
+        <span class="key-hint">5 NSE Stocks</span>
+        <span class="key-hint">1 Year History</span>
+        <span class="key-hint">Live Analytics</span>
+      </div>
+    </div>
+
+    <!-- Dashboard state (hidden until company selected) -->
+    <div id="dashboardState" style="display:none;">
+
+      <!-- Cards -->
+      <div class="cards" id="cards">
+        <div class="card card-green animate-in">
+          <div class="card-header">
+            <span class="card-label">52-Week High</span>
+            <div class="card-icon">&#x2191;</div>
+          </div>
+          <div class="card-value" id="c_high">&mdash;</div>
+          <div class="card-sub">Highest price in 52 weeks</div>
+        </div>
+
+        <div class="card card-red animate-in">
+          <div class="card-header">
+            <span class="card-label">52-Week Low</span>
+            <div class="card-icon">&#x2193;</div>
+          </div>
+          <div class="card-value" id="c_low">&mdash;</div>
+          <div class="card-sub">Lowest price in 52 weeks</div>
+        </div>
+
+        <div class="card card-blue animate-in">
+          <div class="card-header">
+            <span class="card-label">Avg Close</span>
+            <div class="card-icon">&#x2300;</div>
+          </div>
+          <div class="card-value" id="c_avg">&mdash;</div>
+          <div class="card-sub">Average closing price</div>
+        </div>
+
+        <div class="card card-amber animate-in">
+          <div class="card-header">
+            <span class="card-label">Latest Close</span>
+            <div class="card-icon">&#x25CF;</div>
+          </div>
+          <div class="card-value" id="c_latest">&mdash;</div>
+          <div class="card-sub">Most recent closing price</div>
+        </div>
+
+        <div class="card card-purple animate-in">
+          <div class="card-header">
+            <span class="card-label">Volatility</span>
+            <div class="card-icon">&#x223F;</div>
+          </div>
+          <div class="card-value" id="c_vol">&mdash;</div>
+          <div class="card-sub">20-day rolling std dev</div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-container animate-in" style="animation-delay:0.25s;">
+        <div class="chart-header">
+          <div class="chart-title" id="chartTitle">Price History</div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="priceChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SCRIPT ═══════════ -->
+<script>
+const API = '/api';
+let currentSymbol = null;
+let currentDays = 30;
+let chart = null;
+
+// company colors for sidebar icons
+const COLORS = {
+  INFY:      { bg: '#1e3a5f', grad: 'linear-gradient(135deg, #38bdf8, #0ea5e9)' },
+  TCS:       { bg: '#1e3a2a', grad: 'linear-gradient(135deg, #4ade80, #22c55e)' },
+  RELIANCE:  { bg: '#3b1e4a', grad: 'linear-gradient(135deg, #c084fc, #a855f7)' },
+  HDFCBANK:  { bg: '#3b2e1e', grad: 'linear-gradient(135deg, #fbbf24, #f59e0b)' },
+  ICICIBANK: { bg: '#3b1e1e', grad: 'linear-gradient(135deg, #fb7185, #e11d48)' },
+};
+
+const FULL_NAMES = {
+  INFY: 'Infosys Ltd', TCS: 'Tata Consultancy',
+  RELIANCE: 'Reliance Industries', HDFCBANK: 'HDFC Bank',
+  ICICIBANK: 'ICICI Bank',
+};
+
+// ── loading bar ──
+function showLoader() { document.getElementById('loader').classList.add('active'); }
+function hideLoader() { document.getElementById('loader').classList.remove('active'); }
+
+// ── load companies ──
+async function loadCompanies() {
+  const res = await fetch(`${API}/companies`);
+  const companies = await res.json();
+  const container = document.getElementById('companyList');
+  const sel = document.getElementById('compareSelect');
+  container.innerHTML = '';
+
+  companies.forEach(c => {
+    const col = COLORS[c.symbol] || { grad: 'linear-gradient(135deg,#64748b,#475569)' };
+
+    const btn = document.createElement('button');
+    btn.className = 'company-btn';
+    btn.innerHTML = `
+      <div class="company-icon" style="background:${col.grad};">${c.symbol.slice(0,2)}</div>
+      <div class="company-btn-text">
+        <div class="company-btn-symbol">${c.symbol}</div>
+        <div class="company-btn-name">${FULL_NAMES[c.symbol] || c.symbol}</div>
+      </div>
+    `;
+    btn.onclick = () => selectCompany(c.symbol);
+    container.appendChild(btn);
+
+    const opt = document.createElement('option');
+    opt.value = c.symbol; opt.textContent = c.symbol;
+    sel.appendChild(opt);
+  });
+}
+
+// ── select company ──
+async function selectCompany(symbol) {
+  currentSymbol = symbol;
+  showLoader();
+
+  // toggle sidebar active
+  document.querySelectorAll('.company-btn').forEach(b =>
+    b.classList.toggle('active', b.querySelector('.company-btn-symbol').textContent === symbol)
+  );
+
+  // update header
+  document.getElementById('title').innerHTML =
+    `${FULL_NAMES[symbol] || symbol} <span class="symbol-badge">${symbol}</span>`;
+  document.getElementById('subtitle').textContent = 'Loading data...';
+
+  // show dashboard, hide welcome
+  document.getElementById('welcomeState').style.display = 'none';
+  document.getElementById('dashboardState').style.display = 'block';
+
+  // re-trigger card animations
+  document.querySelectorAll('.cards .card').forEach(el => {
+    el.style.animation = 'none';
+    el.offsetHeight; // reflow
+    el.style.animation = '';
+  });
+
+  await Promise.all([loadSummary(), loadChart()]);
+  document.getElementById('subtitle').textContent = `Showing ${currentDays === 365 ? '1 year' : currentDays + '-day'} data`;
+  hideLoader();
+}
+
+// ── load summary ──
+async function loadSummary() {
+  const res = await fetch(`${API}/summary/${currentSymbol}`);
+  const s = await res.json();
+  document.getElementById('c_high').textContent   = fmt(s.high_52w);
+  document.getElementById('c_low').textContent    = fmt(s.low_52w);
+  document.getElementById('c_avg').textContent    = fmt(s.avg_close);
+  document.getElementById('c_latest').textContent = fmt(s.latest_close);
+  document.getElementById('c_vol').textContent    = s.latest_volatility
+    ? (s.latest_volatility * 100).toFixed(2) + '%' : '—';
+}
+
+// ── load chart ──
+async function loadChart() {
+  const compare = document.getElementById('compareSelect').value;
+  let labels, dataset1, dataset2 = null;
+
+  if (compare && compare !== currentSymbol) {
+    const res = await fetch(`${API}/compare?symbol1=${currentSymbol}&symbol2=${compare}&days=${currentDays}`);
+    const d = await res.json();
+    labels   = d.data.map(r => r.date);
+    dataset1 = makeDataset(d.symbol1, d.data.map(r => r.close_1), '#38bdf8', 'rgba(56,189,248,0.08)');
+    dataset2 = makeDataset(d.symbol2, d.data.map(r => r.close_2), '#c084fc', 'rgba(192,132,252,0.08)');
+    document.getElementById('chartTitle').innerHTML =
+      `${d.symbol1} <span>vs</span> ${d.symbol2} — Closing Prices`;
+  } else {
+    const res = await fetch(`${API}/data/${currentSymbol}?days=${currentDays}`);
+    const rows = (await res.json()).reverse();
+    labels   = rows.map(r => r.date);
+    dataset1 = makeDataset(currentSymbol, rows.map(r => r.close), '#38bdf8', 'rgba(56,189,248,0.06)');
+    document.getElementById('chartTitle').innerHTML =
+      `${currentSymbol} <span>— Closing Price</span>`;
+  }
+
+  const datasets = dataset2 ? [dataset1, dataset2] : [dataset1];
+
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('priceChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: !!dataset2,
+          labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 }, usePointStyle: true, pointStyle: 'circle', padding: 20 }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15,23,42,0.95)',
+          titleColor: '#f1f5f9',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(56,189,248,0.15)',
+          borderWidth: 1,
+          cornerRadius: 10,
+          padding: 14,
+          titleFont: { family: 'Inter', weight: '600', size: 13 },
+          bodyFont: { family: 'Inter', size: 12 },
+          displayColors: true,
+          usePointStyle: true,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmtShort(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#475569', font: { family: 'Inter', size: 11 }, maxTicksLimit: 10, maxRotation: 0 },
+          grid: { color: 'rgba(51,65,85,0.3)', drawBorder: false }
+        },
+        y: {
+          ticks: {
+            color: '#475569',
+            font: { family: 'Inter', size: 11 },
+            callback: v => fmtShort(v)
+          },
+          grid: { color: 'rgba(51,65,85,0.3)', drawBorder: false }
+        }
+      },
+      elements: { point: { radius: 0, hoverRadius: 5, hoverBorderWidth: 2 } }
+    }
+  });
+}
+
+function makeDataset(label, data, color, bgColor) {
+  return {
+    label, data,
+    borderColor: color,
+    backgroundColor: (ctx) => {
+      const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
+      g.addColorStop(0, bgColor);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      return g;
+    },
+    fill: true,
+    tension: 0.35,
+    borderWidth: 2,
+  };
+}
+
+// ── filters ──
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-filter'));
+    btn.classList.add('active-filter');
+    currentDays = parseInt(btn.dataset.days);
+    if (currentSymbol) selectCompany(currentSymbol);
+  });
+});
+
+document.getElementById('compareSelect').addEventListener('change', () => {
+  if (currentSymbol) loadChart();
+});
+
+// ── helpers ──
+function fmt(v) {
+  return v != null ? '₹' + Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—';
+}
+function fmtShort(v) {
+  if (v >= 10000) return '₹' + (v / 1000).toFixed(1) + 'K';
+  return '₹' + Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+}
+
+// ── init ──
+loadCompanies();
+</script>
+</body>
+</html>
